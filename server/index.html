@@ -1,0 +1,276 @@
+<script src="https://cdn.netpie.io/microgear.js"></script>
+
+<!-- NETPIE script must be on top of everything otherwise connection will be broken -->
+<script>
+    // dictionary for states
+    state_dict = {
+        0: "STATE_STB",
+        1: "STATE_MEASURE_MAX",
+        2: "STATE_CONNECT_CLOUD",
+        3: "STATE_EXERCISE",
+        4: "STATE_REST",
+        5: "STATE_CLEANUP",
+        6: "STATE_TEST"
+    }
+
+    // constant
+    const REMAINING_TIME_MAX = 8;
+    const REST_TIME_MAX = 8;
+    const NEEDLE_POS = ['36.9%', '40.7%', '44.5%', '48.3%', '52.2%', '56%', '59.6%'];
+    const BAD_GRIP_INTERVAL = 3;
+
+    // GLOBAL Control Variable
+    var command = "";
+    var state = "";
+    var set = 0;
+    var grip_level = 0;
+    var remaining_time = 0;
+    var score = 0;
+
+    var timer = 0;
+
+    // FNS
+    function parseAndGetMsg(msg) {
+        obj = JSON.parse(msg);
+        command = obj.cmd;
+        state = state_dict[obj.state];
+        set = obj.set;
+        grip_level = obj.grip_level;
+        remaining_time = obj.remaining_time;
+        score = obj.stat;
+    }
+
+    // video control functions
+    function playVideo() {
+        let vid = document.getElementById("myVid")
+        vid.play();
+    }
+
+    function pauseVideo() {
+        let vid = document.getElementById("myVid")
+        vid.pause();
+    }
+
+    function closeThenReplayVid() {
+        playVideo();
+        undimScreen();
+        $(".result-modal").css("display", "none");
+    }
+
+    // screen dimming
+    function dimScreen() {
+        $("#overlay").css("display", "block")
+    }
+
+    function undimScreen() {
+        $("#overlay").css("display", "none")
+    }
+
+    // play audio
+    function playScoreSound() {
+        let sound = document.getElementById("score-sound");
+        sound.play();
+    }
+</script>
+
+<script>
+    // netpie config
+    const APPID = "MookSqueezer";
+    const KEY = "snR94y1PEUEYaw7";
+    const SECRET = "z2Iefu3AqMTj99dvw86BGzbM1";
+    const ALIAS = "server";
+
+    var microgear = Microgear.create({
+        key: KEY,
+        secret: SECRET,
+        alias: ALIAS
+    });
+
+    microgear.on('message', function (topic, msg) {
+        // console.log(msg)
+        parseAndGetMsg(msg)
+
+        // remove overlay if there's a message
+        $("#overlay").css("display", "none")
+        $("#overlay-text").css("display", "none") // also remove overlay text
+
+        // video control
+        if (command === "CONNECT") {
+            playVideo();
+        } else if (command === "END") {
+            pauseVideo();
+        }
+
+        // update progress bar
+        if (state == "STATE_REST") {
+            $("#number-of-set").text(`REST`)
+        } else {
+            $("#number-of-set").text(`SET ${set}`)
+        }
+        let progress = Math.round((REMAINING_TIME_MAX - remaining_time) / REMAINING_TIME_MAX * 100)
+        $(".progress-bar").css("width", progress.toString() + "%");
+
+        // update needle
+        if (state === "STATE_REST") {
+            $(".needle").css("left", NEEDLE_POS[3]);
+        } else {
+            $(".needle").css("left", NEEDLE_POS[parseInt(grip_level) + 3]);
+        }
+
+
+        // dimming
+        if (state === "STATE_EXERCISE") {
+            if (performance.now() - timer >= BAD_GRIP_INTERVAL * 1000) {
+                dimScreen();
+            }
+
+            if (grip_level == 0) {
+                timer = performance.now()
+                undimScreen();
+            }
+        } else {
+            timer = performance.now();
+            undimScreen();
+        }
+
+
+        // show stats and play sound
+        if (command === "END") {
+            $("#overlay").css("display", "block")
+            $(".result-modal").css("display", "block");
+
+            playScoreSound()
+            $(".result-percentage").text(parseInt(score))
+            console.log(score)
+        }
+    });
+
+    microgear.on('connected', function () {
+        microgear.setAlias(ALIAS);
+        console.log("Netpie Connected.")
+
+        // start dim timer
+        timer = performance.now();
+    });
+
+    microgear.connect(APPID);
+</script>
+
+
+<!-- HTML begins -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squeezium</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.0.min.js"
+        integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous">
+    </script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous">
+    </script>
+</head>
+
+
+<body>
+
+    <!-- overlay -->
+    <div id="overlay">
+        <div id="overlay-text">Device is not connected.</div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar fixed-top navbar-light bg-light" style="padding: 0; background-color: white !important;">
+        <img src="./asset/top_bar.png" alt="top bar" width="100%">
+        <a id="logo" class="navbar-brand" href="#">Squeezium</a>   
+        
+        <div class="navbar-item-wrapper">
+            <a href="#" class="navbar-item navbar-item-active">ออกกำลังกาย</a>
+            <a href="#" class="navbar-item">ผลิตภัณฑ์</a>
+            <a href="#" class="navbar-item">คำถาม</a>
+            <a href="#" class="navbar-item">ติดต่อเรา</a>
+        </div>
+    </nav>
+
+    <div class="img-head">
+        <img src="./asset/head.png" alt="header" width="200px">
+    </div>
+
+    <!-- BODY -->
+    <div class="container">
+        <div class="pt-5 pb-4" style="background-color: #f7f7f7;">
+
+            <!-- progress bar -->
+            <div id="progress-bar-wrapper" class="row justify-content-center mt-2">
+                <div id="custom-progress-bar" class="progress" style="width: 50%;">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="83" aria-valuemin="0"
+                        aria-valuemax="100" style="width: 83%; background-color: rgb(52, 125, 241);"></div>
+                </div>
+                <div id="set-indicator" class="ml-3">
+                    <span id="number-of-set">SET 1</span>
+                </div>
+            </div>
+
+            <!-- video -->
+            <div class="row mt-4">
+                <div class="col d-flex justify-content-center">
+                    <video id="myVid" width="768" height="432">
+                        <source src="vid.mp4" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+
+            <!-- guage -->
+            <div class="row">
+                <div class="guage-wrapper">
+                    <div class="yellow-rect"></div>
+                    <div class="green-rect"></div>
+                    <div class="needle"></div>
+                </div>
+            </div>
+
+            <!-- headline -->
+            <div class="row mt-3">
+                <div id="video-headline" class="col">
+                    <h4>ตอนที่ 48 ความดันทุรังสูง (ความดันโลหิตสูง)</h4>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- result -->
+        <div class="result-modal">
+            <div class="d-flex justify-content-center">
+                <img src="./asset/result4.png" alt="result">
+            </div>
+
+            <div class="result-percentage-wrapper">
+                <span class="result-percentage">99</span><span style="font-size: 0.7em;"> %</span>
+            </div>
+
+            <div class="reload-btn" onclick="location.reload()"></div>
+            <div class="close-btn" onclick="closeThenReplayVid()"></div>
+
+        </div>
+    </div>
+
+    <!-- audio -->
+    <audio id="score-sound" src="./asset/score_web.mp3"></audio>
+
+</body>
+
+</html>

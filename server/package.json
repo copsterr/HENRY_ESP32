@@ -1,0 +1,11 @@
+{
+  "name": "mook_squeezer",
+  "version": "1.0.0",
+  "description": "for squeezer",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Siraphob Kanjanasaensong (Copter)",
+  "license": "ISC"
+}
