@@ -1,8 +1,11 @@
 /*
- * Author: Siraphob Kanjanasaensong
- * Email: siraphob.k@outlook.com
- * Disclaimer: This firmware is hackathoned to make it work. The stability is not guaranteed because I have to do senior project. 
- * (Yes, I'm a senior year student. LOL)
+ * Such a huge work for a fraction of money.
+ */
+
+/*
+ * Todo:
+ * 1. Change 16 fractions to 32
+ * 2. Add sound
  */
 
 #include <Adafruit_GFX.h>    // Core graphics library
@@ -39,8 +42,8 @@
 
 #define SEC2MILLIS_RATIO 1000
 
-#define REST_TIME         60  // 60 seconds
-#define MESAURE_GRIP_TIME 120 // 120 seconds
+#define REST_TIME         30  // 60 seconds
+#define MESAURE_GRIP_TIME 30 // 120 seconds
 
 // NETPIE
 #define TARGET_ALIAS "server"
@@ -58,7 +61,7 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 HX711 scale1;
 const int32_t loadcell_base_1 = 140000;
-const int32_t scale_factor    = 12000;  // can change this later
+const int32_t scale_factor    = 1000;  // can change this later
 int32_t scale_reading = 0;
 int16_t max_strength = 0; //kg
 uint8_t number_of_set = 0;
@@ -84,9 +87,9 @@ String json = "";
 String command = "";
 
 // DFPlayer
-//SoftwareSerial mySoftwareSerial(15, 13); // RX, TX
-//DFRobotDFPlayerMini myDFPlayer;
-//uint8_t df_vloume = 20;
+SoftwareSerial mySoftwareSerial(15, 13); // RX, TX
+DFRobotDFPlayerMini myDFPlayer;
+uint8_t df_vloume = 20;
 
 
 /* ENUMS */
@@ -108,7 +111,7 @@ void setup(void) {
   Serial.begin(115200);
   print_wakeup_reason();
 
-//  mySoftwareSerial.begin(9600, SWSERIAL_8N1, 15, 13);
+  mySoftwareSerial.begin(9600, SWSERIAL_8N1, 15, 13);
 
   // init TFT Display
   tft.initR(INITR_144GREENTAB);
@@ -154,16 +157,12 @@ void loop() {
       // if user press main btn within 10 sec then start the process
       if (!digitalRead(MAIN_BTN_PIN)) {
         delay(200);
-
-        // draw logo
-        drawLogo();
-        delay(3000);
-        tft.fillScreen(COLOR_BLACK);
-        
         timer = millis();
         state = STATE_MEASURE_MAX;
         Serial.println("Measuring Max Strength!");
+
         
+
         // update screen
         drawCdtRing(16, COLOR_YELLOW);
         drawGauge();
@@ -232,9 +231,9 @@ void loop() {
       // measure grip strength
       if (scale1.is_ready()) {
         scale_reading = scale1.read();
-//        Serial.print("Max Strength: "); Serial.print(max_strength);
-//        Serial.print("   Optimal: "); Serial.print(max_strength/3);
-//        Serial.print("   Reading: "); Serial.println(get_weight(scale_reading));
+        Serial.print("Max Strength: "); Serial.print(max_strength);
+        Serial.print("   Optimal: "); Serial.print(max_strength/3);
+        Serial.print("   Reading: "); Serial.println(get_weight(scale_reading));
 
         grip_cnt++;
         grip_level = get_grip_level(max_strength, scale_reading);        
@@ -294,7 +293,7 @@ void loop() {
       // update screen
       timediff = (millis() - timer)/1000;
       rem_time = REST_TIME - timediff;
-      curr_fraction = (rem_time)/3.75;  // <--- Time fraction
+      curr_fraction = (rem_time)/1;  // <--- Time fraction
 
       if (curr_fraction != old_fraction) {
         drawCdtRing(curr_fraction, COLOR_BLUE);
@@ -343,7 +342,14 @@ void loop() {
       
     case STATE_TEST:
 
-      drawLogo();
+      wifi_status = connect_wifi();
+      if (wifi_status == WL_CONNECTED) {
+        Serial.println("Wifi Connected");
+
+        // connect to netpie
+        microgear.init(KEY, SECRET, ALIAS);
+        microgear.connect(APPID);
+      }
 
       while(1);
       
@@ -423,10 +429,11 @@ int connect_wifi(void) {
 
 /* tft related fn start */
 void drawLogo(void) {
-  tft.setCursor(10, 55);
+  tft.setCursor(49, 43);
   tft.setTextColor(COLOR_BLUE, COLOR_BLACK);
-  tft.setTextSize(2);
-  tft.println("Squeezium");
+  tft.setTextSize(6);
+  tft.println(n);
+
 }
 
 void drawImage(uint8_t image[]) {
