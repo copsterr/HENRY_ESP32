@@ -2,13 +2,13 @@
 
 Hello! This device is called "Squeezer". It's purpose is to encourage elders to exercise more.
 Wondering that squeezing is not an exercise? I think not!
-This device deliver a soothing experience of squeezing. It's even connected to the internet.
-You can watch video while exercise. (How cool is that?! :D)
+This device delivers a soothing experience of squeezing. It's even connected to the internet.
+You can watch video while exercising. (How cool is that?! :D)
 
 
 ## Here's something you should know about this device.
-1. It is a prototype. You shouldn't expect robust stability from this device. There are always unseen flaws in product development.
-2. The server is belong to the programmer (me). So a year later, this device might not work properly. (unless you pay me the server cost and maintenance service)
+1. It is a prototype. You shouldn't expect a robust stability from this device. There are always unseen flaws in product development.
+2. The server is belong to the programmer (me). So months later, this device might not work properly. (unless you pay me the server cost and maintenance service)
 3. The web is hackathoned to demonstrate the device's functionality. You shouldn't expect anything fancy like animation, explosion, or a unicorn from it.
 4. It is recommended to use a WiFi router rather than using a mobile Hotspot unless the connection stability is not guaranteed. (Damn NETPIE!)
 5. To change WiFi configuration you can change it by editing credentials.h
