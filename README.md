@@ -11,7 +11,8 @@ You can watch video while exercise. (How cool is that?! :D)
 2. The server is belong to the programmer (me). So a year later, this device might not work properly. (unless you pay me the server cost and maintenance service)
 3. The web is hackathoned to demonstrate the device's functionality. You shouldn't expect anything fancy like animation, explosion, or a unicorn from it.
 4. It is recommended to use a WiFi router rather than using a mobile Hotspot unless the connection stability is not guaranteed. (Damn NETPIE!)
-5. I don't do maintenance service. Extra maintenance rather than consulting will be charged. (and it's very expensive because I don't have money :/)
+5. To change WiFi configuration you can change it by editing credentials.h
+6. I don't do maintenance service. Extra maintenance rather than consulting will be charged. (and it's very expensive because I don't have money :/)
 
 
 ## For nerds
