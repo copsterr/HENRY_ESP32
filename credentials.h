@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* You can change wifi and password here
  It is recommended to use this device with a WiFi router.
  Using mobile hotspot raise unstable connection and can't be used with webservice
@@ -6,6 +7,11 @@
 */
 
 // Edit WiFi credentials here
+=======
+// You can change wifi and password here
+// It is recommended to use this device with a WiFi router.
+// Using mobile hotspot raise unstable connection and can't be used with webservice
+>>>>>>> 3f2203dfbdf1db3e691dd73bbdae1ba0c8d42b0c
 #define WIFI_SSID "CHAILEE_2_2.4GHz"
 #define WIFI_PASS "phaen71214"
 
