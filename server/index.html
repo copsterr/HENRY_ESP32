@@ -14,10 +14,10 @@
     }
 
     // constant
-    const REMAINING_TIME_MAX = 8;
-    const REST_TIME_MAX = 8;
+    const REMAINING_TIME_MAX = 120;
+    const REST_TIME_MAX = 60;
     const NEEDLE_POS = ['36.9%', '40.7%', '44.5%', '48.3%', '52.2%', '56%', '59.6%'];
-    const BAD_GRIP_INTERVAL = 3;
+    const BAD_GRIP_INTERVAL = 10;
 
     // GLOBAL Control Variable
     var command = "";
@@ -27,7 +27,15 @@
     var remaining_time = 0;
     var score = 0;
 
-    var timer = 0;
+    var timer = 0; // used for dimming
+
+    // notify sound flag
+    var greenpls_flag = false;
+    var gripready_flag = false;
+    var roundtimesup_flag = false;
+
+    // startup bug protect
+    var startcmd_received = false;
 
     // FNS
     function parseAndGetMsg(msg) {
@@ -71,6 +79,27 @@
         let sound = document.getElementById("score-sound");
         sound.play();
     }
+
+    function playTurnOn() {
+        let sound = document.getElementById("audio-turnon");
+        sound.play();
+    }
+
+    function soundNotify(notify) {
+        let sound = document.getElementById("audio-countdown")
+
+        if (notify === "countdown") sound = document.getElementById("audio-countdown");
+        else if (notify === "roundtimesup") sound = document.getElementById("audio-roundtimesup");
+        else if (notify === "gripready") sound = document.getElementById("audio-gripready");
+        else if (notify === "timeuprest") sound = document.getElementById("audio-timeuprest");
+        else if (notify === "greenpls") sound = document.getElementById("audio-greenpls");
+        else if (notify === "harder") sound = document.getElementById("audio-harder");
+        else if (notify === "lower") sound = document.getElementById("audio-lower");
+        else if (notify === "gripreadycdt") sound = document.getElementById("audio-gripreadycdt");
+        else if (notify === "endexercise") sound = document.getElementById("audio-endexercise");
+
+        sound.play();
+    }
 </script>
 
 <script>
@@ -104,15 +133,28 @@
         // update progress bar
         if (state == "STATE_REST") {
             $("#number-of-set").text(`REST`)
+            let progress = Math.round((REST_TIME_MAX - remaining_time) / REST_TIME_MAX * 100)
+            $(".progress-bar").css("width", progress.toString() + "%");
         } else {
             $("#number-of-set").text(`SET ${set}`)
+            let progress = Math.round((REMAINING_TIME_MAX - remaining_time) / REMAINING_TIME_MAX * 100)
+            $(".progress-bar").css("width", progress.toString() + "%");
         }
-        let progress = Math.round((REMAINING_TIME_MAX - remaining_time) / REMAINING_TIME_MAX * 100)
-        $(".progress-bar").css("width", progress.toString() + "%");
+        
 
         // update needle
         if (state === "STATE_REST") {
             $(".needle").css("left", NEEDLE_POS[3]);
+
+            if (remaining_time == 5 && !gripready_flag) {
+                gripready_flag = true;
+
+                soundNotify("gripreadycdt")
+            }
+
+            // reset greenpls
+            greenpls_flag = false;
+            roundtimesup_flag = false;
         } else {
             $(".needle").css("left", NEEDLE_POS[parseInt(grip_level) + 3]);
         }
@@ -122,12 +164,31 @@
         if (state === "STATE_EXERCISE") {
             if (performance.now() - timer >= BAD_GRIP_INTERVAL * 1000) {
                 dimScreen();
+                
+                // play harder / lower
+                if (grip_level < 0) soundNotify("harder")
+                else soundNotify("lower")
             }
 
             if (grip_level == 0) {
                 timer = performance.now()
                 undimScreen();
             }
+
+            // play sound greenpls
+            if (!greenpls_flag) {
+                greenpls_flag = true;
+                soundNotify("greenpls")
+            }
+
+            if (remaining_time == 5 && !roundtimesup_flag && set != 4) {
+                roundtimesup_flag = true;
+                soundNotify("endexercise")
+            }
+
+            // reset grip ready
+            gripready_flag = false;
+
         } else {
             timer = performance.now();
             undimScreen();
@@ -135,7 +196,7 @@
 
 
         // show stats and play sound
-        if (command === "END") {
+        if (command === "END" && startcmd_received) {
             $("#overlay").css("display", "block")
             $(".result-modal").css("display", "block");
 
@@ -148,6 +209,8 @@
     microgear.on('connected', function () {
         microgear.setAlias(ALIAS);
         console.log("Netpie Connected.")
+
+        startcmd_received = true;
 
         // start dim timer
         timer = performance.now();
@@ -271,6 +334,25 @@
     <!-- audio -->
     <audio id="score-sound" src="./asset/score_web.mp3"></audio>
 
+    <!-- audio feedback -->
+    <audio id="audio-turnon" src="./asset/audio_feedback/0001_turnon.mp3"></audio>
+    <audio id="audio-countdown" src="./asset/audio_feedback/0002_countdown.mp3"></audio>
+    <audio id="audio-roundtimesup"src="./asset/audio_feedback/0004_roundtimesup.mp3"></audio>
+    <audio id="audio-timeuprest" src="./asset/audio_feedback/0006_timeuprest.mp3"></audio>
+    <audio id="audio-gripready"src="./asset/audio_feedback/0005_gripready.mp3"></audio>
+    <audio id="audio-greenpls"src="./asset/audio_feedback/0009_greenpls.mp3"></audio>
+    <audio id="audio-harder"src="./asset/audio_feedback/0010_harder.mp3"></audio>
+    <audio id="audio-lower"src="./asset/audio_feedback/0011_lower.mp3"></audio>
+    <audio id="audio-gripreadycdt" src="./asset/audio_feedback/0012_gripready_countdown.mp3"></audio>
+    <audio id="audio-endexercise" src="./asset/audio_feedback/0013-endexercise.mp3"></audio>
 </body>
+
+<script>
+    // play opening sound
+    $(document).ready(function () {
+        playTurnOn();
+    });
+    
+</script>
 
 </html>
